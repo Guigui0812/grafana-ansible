@@ -1,0 +1,22 @@
+---
+# tasks file for grafana
+
+- name: Create the grafana directory
+  file:
+    path: /etc/grafana
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0755
+
+#3 : Upload the docker-compose.yml file
+- name: Upload the docker-compose.yml file
+  copy:
+    src: "{{ grafana_docker_compose_file }}"
+    dest: /etc/grafana/docker-compose.yaml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+#6 : Start grafana container
+- name: Start grafana container
+  shell: docker compose -f /etc/grafana/docker-compose.yaml up -d
