@@ -1,22 +1,43 @@
 ---
 # tasks file for grafana
 
+- name: Create Grafana user
+  user:
+    name : grafana
+    state: present
+
 - name: Create the grafana directory
   file:
     path: /etc/grafana
     state: directory
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    owner: "grafana"
     mode: 0755
 
-#3 : Upload the docker-compose.yml file
-- name: Upload the docker-compose.yml file
-  copy:
-    src: "{{ grafana_docker_compose_file }}"
-    dest: /etc/grafana/docker-compose.yaml
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+- name: Create the grafana data directory
+  file:
+    path: /etc/grafana/data
+    state: directory
+    owner: "grafana"
+    mode: 0755
 
-#6 : Start grafana container
-- name: Start grafana container
-  shell: docker compose -f /etc/grafana/docker-compose.yaml up -d
+- name: Get Grafana user id
+  command: "id -g grafana"
+  register: grafana_user_id
+  failed_when: grafana_user_id.rc != 0
+  changed_when: false
+
+- name: Create variable for grafana user id
+  set_fact:
+    grafana_user: "{{ grafana_user_id.stdout }}"
+
+- name: Upload Grafana docker-compose file
+  template:
+    src: templates/docker-compose.yaml.j2
+    dest: /etc/grafana/docker-compose.yaml
+    owner: "grafana"
+    mode: 0664
+
+- name: Start Grafana container
+  community.docker.docker_compose_v2:
+    project_src: "/etc/grafana/"
+    state: present
